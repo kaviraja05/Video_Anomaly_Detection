@@ -1,0 +1,67 @@
+/* 3D Animations and Transitions for Professional UI */
+
+.animate-3d-float {
+  animation: float3d 6s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+.animate-3d-enter {
+  animation: enter3d 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  opacity: 0;
+  transform: translateY(30px) translateZ(-50px) rotateX(10deg);
+}
+
+@keyframes float3d {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes enter3d {
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0) rotateX(0);
+  }
+}
+
+/* Add a 3D hover effect to all summary cards and feature cards */
+.summary-card, .feature-card, .stat-card-live, .frame-card, .explanation-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease !important;
+  transform-style: preserve-3d;
+}
+
+.summary-card:hover, .feature-card:hover, .stat-card-live:hover, .frame-card:hover, .explanation-card:hover {
+  transform: translateY(-5px) scale(1.02) rotateX(2deg) rotateY(2deg) !important;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2), 0 5px 15px rgba(102, 126, 234, 0.4) !important;
+}
+
+/* Stunning neon text effect for titles */
+.page-title {
+  text-shadow: 0 0 10px rgba(102, 126, 234, 0.5), 0 0 20px rgba(102, 126, 234, 0.3);
+  position: relative;
+}
+
+/* Glassmorphism enhanced */
+.results-container, .upload-container, .live-analysis-container {
+  backdrop-filter: blur(20px) !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Upload Dropzone Pulse */
+.upload-dropzone {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.upload-dropzone:hover {
+  transform: scale(1.02) !important;
+  border-color: #667eea !important;
+  box-shadow: 0 0 30px rgba(102, 126, 234, 0.3) inset !important;
+}

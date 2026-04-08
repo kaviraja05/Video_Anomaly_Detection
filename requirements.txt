@@ -1,5 +1,4 @@
 # Python version
-python>=3.8
 
 # Core Deep Learning
 torch>=2.0.0

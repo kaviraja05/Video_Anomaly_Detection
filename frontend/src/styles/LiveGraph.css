@@ -1,0 +1,305 @@
+/* Live Anomaly Graph Styles */
+
+.live-graph-container {
+  background: rgba(15, 32, 39, 0.5);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  margin-bottom: 24px;
+}
+
+.graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.graph-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.graph-title h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  color: white;
+  font-weight: 600;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(245, 101, 101, 0.15);
+  border: 1px solid rgba(245, 101, 101, 0.4);
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #f56565;
+  animation: pulseLive 2s ease-in-out infinite;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: #f56565;
+  border-radius: 50%;
+  animation: blink 1.5s ease-in-out infinite;
+  box-shadow: 0 0 8px rgba(245, 101, 101, 0.8);
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes pulseLive {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.graph-stats {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Courier New', monospace;
+}
+
+.stat-value.anomaly-count {
+  color: #f56565;
+}
+
+.stat-value.current-frame {
+  color: #48bb78;
+}
+
+.graph-content {
+  position: relative;
+  min-height: 300px;
+}
+
+.graph-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.placeholder-icon {
+  font-size: 4rem;
+  margin-bottom: 16px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.graph-placeholder p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Custom Tooltip */
+.custom-tooltip-live {
+  background: rgba(15, 32, 39, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.tooltip-frame {
+  margin: 0 0 6px 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Courier New', monospace;
+}
+
+.tooltip-score {
+  margin: 0 0 6px 0;
+  font-size: 0.95rem;
+  color: white;
+  font-weight: 600;
+}
+
+.tooltip-status {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Anomaly dots animation */
+.anomaly-dot {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+  }
+}
+
+/* Progress bar for live mode */
+.graph-progress-bar {
+  position: relative;
+  margin-top: 16px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: visible;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  position: relative;
+  box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(102, 126, 234, 0.8);
+  animation: progressPulse 1s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(102, 126, 234, 0.8);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(102, 126, 234, 1);
+  }
+}
+
+.progress-text {
+  position: absolute;
+  top: -24px;
+  right: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Courier New', monospace;
+}
+
+/* Recharts custom styles */
+.recharts-wrapper {
+  cursor: pointer;
+}
+
+.recharts-cartesian-axis-tick-value {
+  fill: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.recharts-legend-wrapper {
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .live-graph-container {
+    padding: 16px;
+  }
+
+  .graph-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .graph-title {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .graph-title h3 {
+    font-size: 1.1rem;
+  }
+
+  .live-indicator {
+    padding: 4px 10px;
+    font-size: 0.7rem;
+  }
+
+  .graph-stats {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 16px;
+  }
+
+  .stat-item {
+    flex-direction: row;
+    gap: 6px;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+  }
+
+  .graph-content {
+    min-height: 250px;
+  }
+
+  .custom-tooltip-live {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+}
