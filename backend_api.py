@@ -95,6 +95,7 @@ class PredictionResponse(BaseModel):
     explanation: ExplanationData = Field(..., description="Explainable AI analysis")
     model_confidence: float = Field(..., description="Model confidence level")
     processing_time_ms: float = Field(..., description="Processing time in milliseconds")
+    demo_mode: bool = Field(False, description="Whether the system is using pre-extracted features (Demo Mode)")
 
 # ==================== Memory Bank for RA²R ====================
 class AnomalyMemoryBank:
@@ -200,15 +201,37 @@ model_manager = ModelManager()
 
 # ==================== Utility Functions ====================
 def load_random_feature(seed_string: str = None) -> tuple:
-    """Load a feature file. If seed_string is provided, use it to deterministically pick a feature."""
+    """Load a feature file semantically matching the seed string (Demo Mode)."""
     if not FEATURES_DIR.exists():
         raise FileNotFoundError(f"Features directory not found: {FEATURES_DIR}")
     
-    npy_files = list(FEATURES_DIR.glob("*.npy"))
-    if not npy_files:
+    all_npy_files = list(FEATURES_DIR.glob("*.npy"))
+    if not all_npy_files:
         raise FileNotFoundError(f"No .npy files found in {FEATURES_DIR}")
     
+    npy_files = all_npy_files
+    
     if seed_string:
+        seed_lower = seed_string.lower()
+        prefix = None
+        
+        # Semantic mapping based on UCF-Crime classes
+        if "normal" in seed_lower:
+            prefix = "Normal_Videos"
+        else:
+            anomaly_classes = ["Abuse", "Arrest", "Arson", "Assault", "Burglary", 
+                               "Explosion", "Fighting", "RoadAccidents", "Robbery", 
+                               "Shooting", "Shoplifting", "Stealing", "Vandalism"]
+            for ac in anomaly_classes:
+                if ac.lower() in seed_lower:
+                    prefix = ac
+                    break
+
+        if prefix:
+            filtered_files = [f for f in all_npy_files if f.name.startswith(prefix)]
+            if filtered_files:
+                npy_files = filtered_files
+
         import hashlib
         hash_idx = int(hashlib.md5(seed_string.encode()).hexdigest(), 16)
         feature_file = npy_files[hash_idx % len(npy_files)]
@@ -219,6 +242,14 @@ def load_random_feature(seed_string: str = None) -> tuple:
     features = np.load(feature_file)
     
     return features, feature_file.name
+
+def smooth_scores(scores: np.ndarray, window_size: int = 3) -> np.ndarray:
+    """Apply moving average temporal smoothing to eliminate noise spikes."""
+    if len(scores) < window_size:
+        return scores
+    kernel = np.ones(window_size) / window_size
+    smoothed = np.convolve(scores, kernel, mode='same')
+    return np.clip(smoothed, 0.0, 1.0)
 
 def normalize_features(features: np.ndarray) -> np.ndarray:
     """Normalize features to zero mean and unit variance"""
@@ -376,6 +407,7 @@ async def health_check():
 async def upload_video(
     background_tasks: BackgroundTasks,
     video: UploadFile = File(...),
+    threshold: float = 0.5,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -438,8 +470,10 @@ async def upload_video(
         prediction = model_manager.predict(features_tensor)
         scores = prediction['scores'][0]
         
+        # Apply Temporal Smoothing
+        scores = smooth_scores(scores, window_size=3)
+        
         # Extract anomaly segments
-        threshold = 0.5
         fps = 30.0 # Assuming standard fps if not available
         anomaly_segments = extract_anomaly_segments(scores, threshold=threshold, fps=fps)
         
@@ -461,18 +495,20 @@ async def upload_video(
                 )
         
         processing_time = (time.time() - start_time) * 1000
-        overall_score = float(np.mean(scores))
+        overall_score = float(np.max(scores)) if len(scores) > 0 else 0.0
+        is_anomaly = overall_score > threshold
+        status = "Anomaly" if is_anomaly else "Normal"
         
         await save_analysis_result(
             user_id=current_user["_id"],
             video_name=video.filename,
             anomaly_score=overall_score,
-            status="anomaly" if len(anomaly_segments) > 0 else "normal",
+            status=status.lower(),
             segments=[s.dict() for s in anomaly_segments]
         )
         
         return PredictionResponse(
-            status="success",
+            status=status,
             video_info={
                 "filename": video.filename,
                 "original_filename": video.filename,
@@ -480,13 +516,14 @@ async def upload_video(
                 "duration_seconds": len(scores) / fps,
                 "segments_analyzed": config.num_segments
             },
-            anomaly_detected=len(anomaly_segments) > 0,
+            anomaly_detected=is_anomaly,
             overall_score=overall_score,
             anomaly_segments=anomaly_segments,
             frame_scores=scores.tolist(),
             explanation=explanation,
-            model_confidence=0.92,
-            processing_time_ms=processing_time
+            model_confidence=overall_score if is_anomaly else (1.0 - overall_score),
+            processing_time_ms=processing_time,
+            demo_mode=True
         )
         
     except HTTPException:
@@ -613,8 +650,11 @@ async def upload_video_stream(
                 delay = min(0.05, (duration / 50))
                 await asyncio.sleep(delay)
             
+            # Apply Temporal Smoothing
+            scores = smooth_scores(scores, window_size=3)
+            
             # Extract anomaly segments
-            threshold = 0.5
+            threshold = float(request.query_params.get("threshold", 0.5))
             anomaly_segments = extract_anomaly_segments(scores, threshold=threshold, fps=fps)
             
             # Generate explanation
@@ -625,24 +665,27 @@ async def upload_video_stream(
             )
             
             processing_time = (time_module.time() - start_time) * 1000
-            overall_score = float(np.mean(scores))
+            overall_score = float(np.max(scores)) if len(scores) > 0 else 0.0
+            is_anomaly = overall_score > threshold
+            status = "Anomaly" if is_anomaly else "Normal"
             
             await save_analysis_result(
                 user_id=current_user["_id"],
                 video_name=video.filename,
                 anomaly_score=overall_score,
-                status="anomaly" if len(anomaly_segments) > 0 else "normal",
+                status=status.lower(),
                 segments=[s.dict() for s in anomaly_segments]
             )
             
             # Send final results
             final_results = {
-                'status': 'complete',
-                'anomaly_detected': len(anomaly_segments) > 0,
+                'status': status,
+                'anomaly_detected': is_anomaly,
                 'overall_score': overall_score,
                 'anomaly_segments': [seg.dict() for seg in anomaly_segments],
                 'explanation': explanation.dict(),
-                'processing_time_ms': processing_time
+                'processing_time_ms': processing_time,
+                'demo_mode': True
             }
             
             yield f"event: complete\ndata: {json.dumps(final_results)}\n\n"
@@ -672,6 +715,50 @@ async def upload_video_stream(
             "X-Accel-Buffering": "no"
         }
     )
+
+@app.post("/debug-analysis")
+async def debug_analysis(video: UploadFile = File(...)):
+    """A debugging endpoint to inspect input features and model outputs without writing to the db."""
+    try:
+        features, filename = load_random_feature(video.filename)
+        if features.shape[-1] == 1024:
+            features = np.concatenate((features, features), axis=-1)
+        original_shape = features.shape
+
+        features = normalize_features(features)
+        features = segment_features(features, num_segments=config.num_segments)
+
+        features_tensor = torch.tensor(features, dtype=torch.float32).unsqueeze(0)
+        prediction = model_manager.predict(features_tensor)
+        scores = prediction['scores'][0]
+
+        smoothed = smooth_scores(scores, window_size=3)
+        
+        return {
+            "status": "success",
+            "video_filename": video.filename,
+            "mapped_feature_file": filename,
+            "feature_shape": list(original_shape),
+            "model_input_shape": list(features.shape),
+            "min_val": float(np.min(features)),
+            "max_val": float(np.max(features)),
+            "nan_count": int(np.isnan(features).sum()),
+            "raw_scores": scores.tolist(),
+            "smoothed_scores": smoothed.tolist(),
+            "score_distribution": {
+                "min": float(np.min(smoothed)),
+                "max": float(np.max(smoothed)),
+                "mean": float(np.mean(smoothed)),
+                "median": float(np.median(smoothed))
+            }
+        }
+    except Exception as e:
+        logger.error(f"Debug analysis failed: {e}")
+        raise HTTPException(status_code=500, detail={
+            "error": "Debug processing failed",
+            "message": str(e),
+            "type": type(e).__name__
+        })
 
 @app.get("/preprocessing-proof")
 async def preprocessing_proof(current_user: dict = Depends(get_current_user)):

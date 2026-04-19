@@ -31,7 +31,9 @@ const ResultsPage = ({ analysisData }) => {
     anomaly_segments = [],
     frame_scores = [],
     explanation,
-    processing_time_ms
+    processing_time_ms,
+    demo_mode,
+    model_confidence
   } = analysisData;
 
   // Prepare chart data
@@ -93,14 +95,22 @@ const ResultsPage = ({ analysisData }) => {
           <h1 className="text-3xl font-extrabold text-slate-100 flex items-center gap-3 mb-2">
             <BarChart3 className="text-blue-500" size={32} />
             Analysis Results
+            {demo_mode && <span className="ml-2 text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">Demo Mode</span>}
           </h1>
           <p className="text-slate-400">Detailed offline post-processing analytics for the uploaded video.</p>
         </div>
-        <div className={`flex items-center gap-2 px-6 py-3 rounded-full border shadow-lg backdrop-blur-md ${
-          anomaly_detected ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+        <div className={`flex items-center gap-3 px-6 py-2.5 rounded-full border shadow-lg backdrop-blur-md ${
+          status?.toLowerCase() === 'anomaly' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
         }`}>
-          {anomaly_detected ? <AlertTriangle size={20} className="animate-pulse shadow-red-500" /> : <CheckCircle size={20} />}
-          <span className="font-semibold">{anomaly_detected ? 'Anomaly Detected' : 'Normal Activity'}</span>
+          {status?.toLowerCase() === 'anomaly' ? <AlertTriangle size={24} className="animate-pulse shadow-red-500" /> : <CheckCircle size={24} />}
+          <div className="flex flex-col">
+            <span className="font-bold text-lg leading-tight uppercase tracking-wide">{status?.toLowerCase() === 'anomaly' ? 'Anomaly' : 'Normal'}</span>
+            {model_confidence !== undefined && (
+              <span className="text-[10px] font-mono tracking-wider opacity-80 uppercase">
+                {(model_confidence * 100).toFixed(1)}% Confidence
+              </span>
+            )}
+          </div>
         </div>
       </motion.div>
 
