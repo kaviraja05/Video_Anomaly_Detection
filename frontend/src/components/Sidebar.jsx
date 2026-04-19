@@ -63,9 +63,9 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
         
         <button 
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`p-2 rounded-lg hover:bg-slate-800 transition-colors text-slate-400 hover:text-slate-200 ${isCollapsed ? 'mx-auto' : ''}`}
+          className={`p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all duration-300 ${isCollapsed ? 'mx-auto' : ''} flex items-center justify-center group`}
         >
-          {isCollapsed ? <Menu size={20} /> : <X size={20} />}
+          <Menu size={22} className="group-hover:scale-110 transition-transform duration-300" />
         </button>
       </div>
 

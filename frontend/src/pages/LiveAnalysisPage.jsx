@@ -26,6 +26,7 @@ const LiveAnalysisPage = () => {
   const graphRef = useRef(null);
   const eventSourceRef = useRef(null);
   const fileInputRef = useRef(null);
+  const scoreBufferRef = useRef([]);
 
   // Handlers
   const handleFileSelect = (event) => {
@@ -61,25 +62,30 @@ const LiveAnalysisPage = () => {
 
     setVideoFile(file);
     setError(null);
-    setAnalysisStatus('buffering');
-    setStatusMessage('Preparing analysis buffer...');
+    setAnalysisStatus('ready');
+    setStatusMessage('Ready. Click "Start Analysis" to begin.');
     setFrameScores([]);
     setFinalResults(null);
     setVideoInfo(null);
     setCurrentFrame(0);
     setBufferedAnalysis(null);
     setDrawnFrameCount(0);
-    
-    bufferAnalysis(file);
+    scoreBufferRef.current = [];
   };
 
-  const bufferAnalysis = async (file) => {
+  const startLiveAnalysis = async () => {
+    if (!videoFile) return;
+    setAnalysisStatus('streaming');
+    setStatusMessage('Connecting to real-time model stream...');
+    setIsAnalyzing(true);
+    setIsVideoPlaying(true); // Auto-play video
+
     try {
       const formData = new FormData();
-      formData.append('video', file);
+      formData.append('video', videoFile);
 
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/upload', {
+      const response = await fetch('http://localhost:8000/upload-stream', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -88,18 +94,64 @@ const LiveAnalysisPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        throw new Error(`Stream failed: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      setBufferedAnalysis(data);
-      setVideoInfo(data.video_info);
-      setAnalysisStatus('ready');
-      setStatusMessage('Analysis ready. Play the video to begin visualization.');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        
+        buffer = lines.pop() || '';
+
+        for (const block of lines) {
+          if (!block.trim()) continue;
+          const [eventLine, dataLine] = block.split('\n');
+          if (!dataLine) continue;
+
+          const eventType = eventLine.replace('event: ', '').trim();
+          const dataStr = dataLine.replace('data: ', '').trim();
+
+          if (eventType === 'error') {
+            const data = JSON.parse(dataStr);
+            setError(data.error);
+            setAnalysisStatus('error');
+            return;
+          }
+
+          if (eventType === 'status') {
+             setStatusMessage(JSON.parse(dataStr).message);
+          }
+
+          if (eventType === 'video_info') {
+             setVideoInfo(JSON.parse(dataStr));
+          }
+
+          if (eventType === 'frame_data') {
+             const data = JSON.parse(dataStr);
+             scoreBufferRef.current.push(data);
+          }
+
+          if (eventType === 'complete') {
+             const data = JSON.parse(dataStr);
+             setFinalResults(data);
+             setAnalysisStatus('complete');
+             setIsAnalyzing(false);
+             setStatusMessage('Analysis visualization complete!');
+          }
+        }
+      }
     } catch (err) {
-      console.error('Buffer error:', err);
-      setError(err.message || 'Failed to prepare analysis');
+      console.error('Stream error:', err);
+      setError(err.message || 'Failed to process analysis stream');
       setAnalysisStatus('error');
+      setIsAnalyzing(false);
     }
   };
 
@@ -107,42 +159,32 @@ const LiveAnalysisPage = () => {
     setCurrentTime(time);
     setCurrentFrame(frame);
     
-    if (bufferedAnalysis && bufferedAnalysis.frame_scores) {
-      if (analysisStatus === 'ready' && isVideoPlaying) {
-         setAnalysisStatus('streaming');
-         setIsAnalyzing(true);
-      }
+    if (analysisStatus === 'streaming' || analysisStatus === 'complete') {
+      const validBuffer = scoreBufferRef.current.filter(d => d.timestamp <= time);
       
-      const targetFrame = Math.min(frame, bufferedAnalysis.frame_scores.length - 1);
-      if (targetFrame > drawnFrameCount) {
-         setStatusMessage('Streaming detection results...');
-         const newScores = bufferedAnalysis.frame_scores.slice(drawnFrameCount, targetFrame + 1);
-         if (newScores.length > 0) {
-            if (graphRef.current?.addDataBatch) {
-              graphRef.current.addDataBatch(drawnFrameCount, newScores);
-            }
-            setDrawnFrameCount(targetFrame + 1);
-            setFrameScores(prev => [...prev, ...newScores]);
-            
-            if (targetFrame >= bufferedAnalysis.frame_scores.length - 1) {
-                setAnalysisStatus('complete');
-                setFinalResults(bufferedAnalysis);
-                setIsAnalyzing(false);
-                setStatusMessage('Analysis visualization complete!');
-            }
-         }
-      } else if (targetFrame < drawnFrameCount) {
-         // User scrubbed backwards
-         setDrawnFrameCount(targetFrame + 1);
-         const slicedScores = bufferedAnalysis.frame_scores.slice(0, targetFrame + 1);
-         setFrameScores(slicedScores);
+      if (frame < drawnFrameCount) {
+         // User scrubbed backward
+         const validScores = validBuffer.map(d => d.score);
+         setFrameScores(validScores);
+         setDrawnFrameCount(validBuffer.length);
          if (graphRef.current?.setData) {
-            graphRef.current.setData(slicedScores.map((score, index) => ({
-              frame: index,
-              score: score,
-              anomaly: score > 0.5
+            graphRef.current.setData(validBuffer.map(d => ({
+              frame: d.frame_index,
+              score: d.score,
+              anomaly: d.score > 0.5
             })));
          }
+      } else if (validBuffer.length > drawnFrameCount) {
+         // Proceed forward
+         const newScoresEntries = validBuffer.slice(drawnFrameCount);
+         const newScores = newScoresEntries.map(d => d.score);
+         
+         if (graphRef.current?.addDataBatch) {
+            graphRef.current.addDataBatch(drawnFrameCount, newScores);
+         }
+         
+         setFrameScores(validBuffer.map(d => d.score));
+         setDrawnFrameCount(validBuffer.length);
       }
     }
   };
@@ -241,8 +283,18 @@ const LiveAnalysisPage = () => {
             </div>
             
             <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
-              {(analysisStatus === 'buffering' || analysisStatus === 'ready' || analysisStatus === 'streaming') && (
-                <div className="flex-1 w-full md:w-64">
+              {analysisStatus === 'ready' && (
+                <button 
+                  className="px-6 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold transition-colors shadow-[0_0_15px_rgba(245,158,11,0.5)] whitespace-nowrap flex items-center gap-2"
+                  onClick={startLiveAnalysis}
+                >
+                  <Activity size={18} />
+                  Start Analysis
+                </button>
+              )}
+
+              {(analysisStatus === 'buffering' || analysisStatus === 'streaming' || analysisStatus === 'complete') && (
+                <div className="flex-1 w-full md:w-64 flex flex-col justify-center">
                   <div className="flex justify-between text-xs text-slate-300 mb-1">
                     <span>{statusMessage}</span>
                     {analysisStatus === 'streaming' && videoInfo && (
@@ -311,10 +363,18 @@ const LiveAnalysisPage = () => {
               <div className="flex flex-col gap-6">
                 {/* Live Graph Box */}
                 <div className="glass-panel p-5 rounded-2xl shadow-xl border border-slate-700/50 flex-1 min-h-[350px] flex flex-col">
-                  <h3 className="text-slate-200 font-semibold mb-4 flex items-center gap-2">
-                    <Activity className="text-amber-500" size={18} />
-                    Live Anomaly Score Monitor
-                  </h3>
+                  <div className="flex items-center gap-3 mb-4">
+                    <h3 className="text-slate-200 font-semibold flex items-center gap-2">
+                      <Activity className="text-amber-500" size={18} />
+                      Live Anomaly Score Monitor
+                    </h3>
+                    {analysisStatus === 'streaming' && (
+                      <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] uppercase font-bold tracking-widest animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                        Live
+                      </span>
+                    )}
+                  </div>
                   <div className="flex-1 relative">
                     <LiveAnomalyGraph
                       ref={graphRef}
