@@ -32,7 +32,7 @@ const Dashboard = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] h-full">
         <Loader2 size={48} className="text-blue-500 animate-spin mb-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]" />
-        <p className="text-slate-400 font-medium animate-pulse">Initializing connection to inference engine...</p>
+        <p className="text-theme-text opacity-70 font-medium animate-pulse">Initializing connection to inference engine...</p>
       </div>
     );
   }
@@ -82,22 +82,22 @@ const Dashboard = () => {
           <Activity size={14} className="animate-pulse" />
           <span>Surveillance Platform Active</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400 tracking-tight mb-3">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-theme-text tracking-tight mb-3">
           Video Anomaly Detection System
         </h1>
-        <p className="text-slate-400 text-lg md:text-xl max-w-3xl font-light">
+        <p className="text-theme-text opacity-70 text-lg md:text-xl max-w-3xl font-light">
           AI-Powered Intelligent Video Surveillance Platform utilizing Hybrid Weakly Supervised Learning (DSM + RA²R + GNN)
         </p>
         
         {/* System Indicators */}
         <div className="flex flex-wrap items-center gap-4 mt-6">
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800 shadow-inner text-sm">
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-theme-card border border-theme-border shadow-sm text-sm">
             <span className={`w-2.5 h-2.5 rounded-full ${health?.status === 'healthy' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-red-500'}`}></span>
-            <span className="text-slate-300 font-medium">System Online</span>
+            <span className="text-theme-text font-medium">System Online</span>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/60 border border-slate-800 shadow-inner text-sm">
-            <Cpu size={16} className="text-blue-400" />
-            <span className="text-slate-300 font-medium">{health?.device?.toUpperCase() || 'CPU'} Tracking</span>
+          <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-theme-card border border-theme-border shadow-sm text-sm">
+            <Cpu size={16} className="text-blue-500" />
+            <span className="text-theme-text font-medium">{health?.device?.toUpperCase() || 'CPU'} Tracking</span>
           </div>
         </div>
       </motion.div>

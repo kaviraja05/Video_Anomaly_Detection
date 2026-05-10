@@ -201,7 +201,7 @@ const UploadPage = ({ onAnalysisComplete }) => {
         <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400 tracking-tight mb-3">
           Upload Video for Analysis
         </h1>
-        <p className="text-slate-400 text-lg">
+        <p className="text-theme-text opacity-70 text-lg">
           Upload your surveillance footage to detect anomalies using our advanced AI system.
         </p>
       </motion.div>
@@ -218,7 +218,7 @@ const UploadPage = ({ onAnalysisComplete }) => {
         {/* Drag and Drop Zone */}
         <div
           className={`relative border-2 border-dashed rounded-2xl p-10 text-center transition-all duration-300 ease-in-out
-            ${dragActive ? 'border-blue-400 bg-blue-500/10 shadow-[0_0_30px_rgba(59,130,246,0.2)]' : 'border-slate-700 hover:border-slate-500 bg-slate-900/50'}
+            ${dragActive ? 'border-theme-accent bg-theme-accent/10 shadow-[0_0_30px_rgba(59,130,246,0.2)]' : 'border-theme-border hover:border-theme-accent/50 bg-theme-bg/50'}
             ${selectedFile ? 'border-emerald-500/50 hover:border-emerald-400' : ''}`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -234,12 +234,12 @@ const UploadPage = ({ onAnalysisComplete }) => {
                 exit={{ opacity: 0 }}
                 className="flex flex-col items-center justify-center space-y-4"
               >
-                <div className="p-5 rounded-full bg-slate-800 text-blue-400 mb-2 shadow-inner group-hover:scale-110 transition-transform">
+                <div className="p-5 rounded-full bg-theme-input text-theme-accent mb-2 shadow-inner group-hover:scale-110 transition-transform">
                   <UploadCloud size={48} strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-semibold text-slate-200">Drag & Drop your video here</h3>
-                <p className="text-slate-500 text-sm">or</p>
-                <label className="cursor-pointer inline-flex items-center px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-medium transition-all shadow-lg hover:shadow-blue-500/25 active:scale-95">
+                <h3 className="text-xl font-semibold text-theme-text">Drag & Drop your video here</h3>
+                <p className="text-theme-text opacity-50 text-sm">or</p>
+                <label className="cursor-pointer inline-flex items-center px-6 py-3 rounded-xl bg-theme-accent hover:opacity-90 text-white font-medium transition-all shadow-lg hover:shadow-theme-accent/25 active:scale-95">
                   <input
                     type="file"
                     className="hidden"
@@ -249,7 +249,7 @@ const UploadPage = ({ onAnalysisComplete }) => {
                   />
                   Browse Files
                 </label>
-                <p className="text-xs text-slate-500 mt-4">
+                <p className="text-xs text-theme-text opacity-50 mt-4">
                   Supported formats: MP4, AVI, MOV, MKV (Max 500MB)
                 </p>
               </motion.div>
@@ -259,21 +259,21 @@ const UploadPage = ({ onAnalysisComplete }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="flex flex-col md:flex-row items-center justify-between bg-slate-800/80 rounded-xl p-6 border border-slate-700"
+                className="flex flex-col md:flex-row items-center justify-between bg-theme-card rounded-xl p-6 border border-theme-border"
               >
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
-                  <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-lg shrink-0">
+                  <div className="p-3 bg-emerald-500/20 text-emerald-500 rounded-lg shrink-0">
                     <Video size={32} />
                   </div>
                   <div className="text-left text-ellipsis overflow-hidden max-w-[200px] md:max-w-md">
-                    <h3 className="text-slate-200 font-semibold truncate" title={selectedFile.name}>{selectedFile.name}</h3>
-                    <p className="text-slate-400 text-sm">{formatFileSize(selectedFile.size)}</p>
+                    <h3 className="text-theme-text font-semibold truncate" title={selectedFile.name}>{selectedFile.name}</h3>
+                    <p className="text-theme-text opacity-70 text-sm">{formatFileSize(selectedFile.size)}</p>
                   </div>
                 </div>
 
                 {!uploading && !success && (
                   <button
-                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors flex items-center gap-2"
+                    className="p-2 text-theme-text opacity-60 hover:text-red-500 hover:opacity-100 hover:bg-red-500/10 rounded-lg transition-all flex items-center gap-2"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedFile(null);
@@ -297,14 +297,14 @@ const UploadPage = ({ onAnalysisComplete }) => {
               animate={{ height: 'auto', opacity: 1 }}
               className="mt-6 space-y-2 overflow-hidden"
             >
-              <div className="flex justify-between text-sm text-slate-300 mb-1">
+              <div className="flex justify-between text-sm text-theme-text opacity-80 mb-1">
                 <span className="flex items-center gap-2">
-                  <Loader2 size={16} className="animate-spin text-blue-400" />
+                  <Loader2 size={16} className="animate-spin text-theme-accent" />
                   {progress < 50 ? 'Uploading video...' : 'Analyzing frames...'}
                 </span>
-                <span className="font-mono text-blue-400">{Math.round(progress)}%</span>
+                <span className="font-mono text-theme-accent">{Math.round(progress)}%</span>
               </div>
-              <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+              <div className="w-full h-3 bg-theme-input rounded-full overflow-hidden border border-theme-border">
                 <motion.div 
                   className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 relative"
                   initial={{ width: 0 }}
@@ -349,7 +349,7 @@ const UploadPage = ({ onAnalysisComplete }) => {
             className="mt-8 flex justify-end gap-4"
           >
             <button
-              className="px-6 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl border border-theme-border text-theme-text opacity-80 hover:opacity-100 hover:bg-theme-card transition-colors disabled:opacity-50"
               onClick={() => {
                 setSelectedFile(null);
                 setError(null);
@@ -387,20 +387,20 @@ const UploadPage = ({ onAnalysisComplete }) => {
         transition={{ delay: 0.2 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12"
       >
-        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm text-center">
-          <Target size={32} className="mx-auto text-blue-400 mb-4" />
-          <h4 className="text-slate-200 font-semibold mb-2">High Accuracy</h4>
-          <p className="text-sm text-slate-500">92% anomaly detection accuracy using advanced Hybrid AI architecture</p>
+        <div className="p-6 rounded-2xl bg-theme-card border border-theme-border backdrop-blur-sm text-center shadow-lg transition-colors duration-300">
+          <Target size={32} className="mx-auto text-blue-500 mb-4" />
+          <h4 className="text-theme-text font-semibold mb-2">High Accuracy</h4>
+          <p className="text-sm text-theme-text opacity-60">92% anomaly detection accuracy using advanced Hybrid AI architecture</p>
         </div>
-        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm text-center">
-          <Zap size={32} className="mx-auto text-yellow-400 mb-4" />
-          <h4 className="text-slate-200 font-semibold mb-2">Fast Processing</h4>
-          <p className="text-sm text-slate-500">Optimized inference engines deliver rapid offline analysis</p>
+        <div className="p-6 rounded-2xl bg-theme-card border border-theme-border backdrop-blur-sm text-center shadow-lg transition-colors duration-300">
+          <Zap size={32} className="mx-auto text-yellow-500 mb-4" />
+          <h4 className="text-theme-text font-semibold mb-2">Fast Processing</h4>
+          <p className="text-sm text-theme-text opacity-60">Optimized inference engines deliver rapid offline analysis</p>
         </div>
-        <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 backdrop-blur-sm text-center">
-          <Search size={32} className="mx-auto text-purple-400 mb-4" />
-          <h4 className="text-slate-200 font-semibold mb-2">Detailed Insights</h4>
-          <p className="text-sm text-slate-500">Comprehensive frame-level analysis with Explainable AI transparency</p>
+        <div className="p-6 rounded-2xl bg-theme-card border border-theme-border backdrop-blur-sm text-center shadow-lg transition-colors duration-300">
+          <Search size={32} className="mx-auto text-purple-500 mb-4" />
+          <h4 className="text-theme-text font-semibold mb-2">Detailed Insights</h4>
+          <p className="text-sm text-theme-text opacity-60">Comprehensive frame-level analysis with Explainable AI transparency</p>
         </div>
       </motion.div>
 

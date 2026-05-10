@@ -6,13 +6,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        darkBg: '#0f172a', /* slate-900 */
-        cardBg: 'rgba(30, 41, 59, 0.7)', /* slate-800 with opacity */
-        primaryAccent: '#3b82f6', /* blue-500 */
-        secondaryAccent: '#8b5cf6', /* violet-500 */
-        success: '#10b981', /* emerald-500 */
-        warning: '#f59e0b', /* amber-500 */
-        danger: '#ef4444', /* red-500 */
+        darkBg: '#0f172a',
+        cardBg: 'rgba(30, 41, 59, 0.7)',
+        primaryAccent: '#3b82f6',
+        secondaryAccent: '#8b5cf6',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        'theme-bg': 'var(--bg-color)',
+        'theme-text': 'var(--text-color)',
+        'theme-card': 'var(--card-bg)',
+        'theme-border': 'var(--card-border)',
+        'theme-input': 'var(--input-bg)',
+        'theme-accent': 'var(--accent-color)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

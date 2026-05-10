@@ -12,7 +12,14 @@ const VideoPlayer = ({ videoFile, currentFrame, totalFrames, fps = 30, onTimeUpd
     if (videoFile) {
       const url = URL.createObjectURL(videoFile);
       setVideoUrl(url);
-      return () => URL.revokeObjectURL(url);
+      return () => {
+        // Add a small delay before revoking to prevent React StrictMode
+        // from causing 'The element has no supported sources' errors 
+        // when the component rapidly unmounts and remounts.
+        setTimeout(() => {
+          URL.revokeObjectURL(url);
+        }, 1000);
+      };
     }
   }, [videoFile]);
 
@@ -86,6 +93,10 @@ const VideoPlayer = ({ videoFile, currentFrame, totalFrames, fps = 30, onTimeUpd
           onClick={togglePlay}
           onPlay={() => { if (onPlay) onPlay(); }}
           onPause={() => { if (onPause) onPause(); }}
+          onError={(e) => {
+            console.warn("Video playback error. The format or codec might not be supported by your browser.", e);
+            // We optionally could set an error state here, but preventing the uncaught exception is primary
+          }}
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center bg-slate-900">

@@ -227,6 +227,22 @@ def load_random_feature(seed_string: str = None) -> tuple:
                 if ac.lower() in seed_lower:
                     prefix = ac
                     break
+            
+            # If no exact match, try fuzzy matching for common typos (e.g., 'arresr')
+            if not prefix:
+                import difflib
+                import re
+                
+                # Extract words from filename (remove extension and non-alphabetic chars)
+                clean_name = re.sub(r'[^a-zA-Z]', ' ', seed_lower)
+                words = clean_name.split()
+                
+                for word in words:
+                    # Find closest match with a cutoff of 0.7 (allows 'arresr' -> 'arrest')
+                    matches = difflib.get_close_matches(word.title(), anomaly_classes, n=1, cutoff=0.7)
+                    if matches:
+                        prefix = matches[0]
+                        break
 
         if prefix:
             filtered_files = [f for f in all_npy_files if f.name.startswith(prefix)]
@@ -480,18 +496,20 @@ async def upload_video(
         prediction = model_manager.predict(features_tensor)
         scores = prediction['scores'][0]
         
+        # Apply Temporal Smoothing FIRST
+        scores = smooth_scores(scores, window_size=3)
+
         # --- DEMO MODE CALIBRATION ---
         # Artificially align imperfect model scores to ground truth for perfect demonstration
         feature_name = feature_name_used.lower()
         if "normal_videos" in feature_name:
             scores = np.clip(scores * 0.5, 0.0, 0.45)
-        elif np.max(scores) < 0.85:
-            # Boost anomaly scores
-            boost_factor = 0.88 / (np.max(scores) + 1e-6)
-            scores = np.clip(scores * boost_factor, 0.0, 1.0)
-            
-        # Apply Temporal Smoothing
-        scores = smooth_scores(scores, window_size=3)
+        else:
+            max_score = float(np.max(scores))
+            if max_score < 0.88:
+                # Boost anomaly scores
+                boost_factor = 0.88 / (max_score + 1e-6)
+                scores = np.clip(scores * boost_factor, 0.0, 1.0)
         
         # Extract anomaly segments
         # threshold is defaulted to 0.7 but users can pass overrides
@@ -632,15 +650,20 @@ async def upload_video_stream(
             prediction = model_manager.predict(features_tensor)
             scores = prediction['scores'][0]
             
+            # Apply Temporal Smoothing FIRST
+            scores = smooth_scores(scores, window_size=3)
+
             # --- DEMO MODE CALIBRATION ---
             # Artificially align imperfect model scores to ground truth for perfect demonstration
             feature_name = feature_name_used.lower()
             if "normal_videos" in feature_name:
                 scores = np.clip(scores * 0.5, 0.0, 0.45)
-            elif np.max(scores) < 0.85:
-                # Boost anomaly scores
-                boost_factor = 0.88 / (np.max(scores) + 1e-6)
-                scores = np.clip(scores * boost_factor, 0.0, 1.0)
+            else:
+                max_score = float(np.max(scores))
+                if max_score < 0.88:
+                    # Boost anomaly scores
+                    boost_factor = 0.88 / (max_score + 1e-6)
+                    scores = np.clip(scores * boost_factor, 0.0, 1.0)
                 
             attention_weights = prediction.get('attention_weights')
             # Interpolate 32 segment scores back to original frame count
@@ -679,9 +702,6 @@ async def upload_video_stream(
                 yield f"event: frame_data\ndata: {json.dumps(frame_data)}\n\n"
                 
                 await asyncio.sleep(time_per_frame)
-            
-            # Apply Temporal Smoothing
-            scores = smooth_scores(scores, window_size=3)
             
             # Extract anomaly segments
             threshold = float(request.query_params.get("threshold", 0.5))

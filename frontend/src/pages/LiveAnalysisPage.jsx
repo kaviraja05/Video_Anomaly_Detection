@@ -133,14 +133,44 @@ const LiveAnalysisPage = () => {
              setVideoInfo(JSON.parse(dataStr));
           }
 
-          if (eventType === 'frame_data') {
+          if (eventType === 'frame_scores') {
              const data = JSON.parse(dataStr);
-             scoreBufferRef.current.push(data);
+             const fps = videoInfo?.fps || 30.0;
+             
+             // Directly update the graph to populate independent of video playback time
+             if (graphRef.current?.addDataBatch) {
+                graphRef.current.addDataBatch(data.start_frame, data.scores);
+             }
+             
+             // Update counters for the progress bar and stats
+             setDrawnFrameCount(prev => Math.max(prev, data.start_frame + data.scores.length));
+             setFrameScores(prev => [...prev, ...data.scores]);
+             
+             data.scores.forEach((score, idx) => {
+                const frame_index = data.start_frame + idx;
+                scoreBufferRef.current.push({
+                   frame_index,
+                   timestamp: frame_index / fps,
+                   score
+                });
+             });
           }
 
           if (eventType === 'complete') {
              const data = JSON.parse(dataStr);
              setFinalResults(data);
+             
+             // Ensure all collected scores are rendered
+             const allScores = data.frame_scores || scoreBufferRef.current.map(d => d.score);
+             setFrameScores(allScores);
+             if (graphRef.current?.setData) {
+                graphRef.current.setData(allScores.map((score, idx) => ({
+                  frame: idx,
+                  score: score,
+                  anomaly: score > 0.5
+                })));
+             }
+
              setAnalysisStatus('complete');
              setIsAnalyzing(false);
              setStatusMessage('Analysis visualization complete!');
@@ -158,35 +188,6 @@ const LiveAnalysisPage = () => {
   const handleVideoTimeUpdate = (time, frame) => {
     setCurrentTime(time);
     setCurrentFrame(frame);
-    
-    if (analysisStatus === 'streaming' || analysisStatus === 'complete') {
-      const validBuffer = scoreBufferRef.current.filter(d => d.timestamp <= time);
-      
-      if (frame < drawnFrameCount) {
-         // User scrubbed backward
-         const validScores = validBuffer.map(d => d.score);
-         setFrameScores(validScores);
-         setDrawnFrameCount(validBuffer.length);
-         if (graphRef.current?.setData) {
-            graphRef.current.setData(validBuffer.map(d => ({
-              frame: d.frame_index,
-              score: d.score,
-              anomaly: d.score > 0.5
-            })));
-         }
-      } else if (validBuffer.length > drawnFrameCount) {
-         // Proceed forward
-         const newScoresEntries = validBuffer.slice(drawnFrameCount);
-         const newScores = newScoresEntries.map(d => d.score);
-         
-         if (graphRef.current?.addDataBatch) {
-            graphRef.current.addDataBatch(drawnFrameCount, newScores);
-         }
-         
-         setFrameScores(validBuffer.map(d => d.score));
-         setDrawnFrameCount(validBuffer.length);
-      }
-    }
   };
 
   const handleGraphFrameClick = (frame) => {
@@ -210,7 +211,7 @@ const LiveAnalysisPage = () => {
             <Activity className="text-amber-500" size={32} />
             Live Anomaly Detection
           </h1>
-          <p className="text-slate-400 text-sm md:text-base">
+          <p className="text-theme-text opacity-70 text-sm md:text-base">
             Upload a video to analyze in real-time with synchronized spatial-temporal playback.
           </p>
         </motion.div>
@@ -238,17 +239,17 @@ const LiveAnalysisPage = () => {
       {!videoFile ? (
         <motion.div 
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="glass-panel p-10 mt-10 md:mt-20 max-w-2xl mx-auto flex flex-col items-center justify-center border-dashed border-2 border-slate-700 hover:border-amber-500/50 transition-colors cursor-pointer group"
+          className="glass-panel p-10 mt-10 md:mt-20 max-w-2xl mx-auto flex flex-col items-center justify-center border-dashed border-2 hover:border-amber-500/50 transition-colors cursor-pointer group"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onClick={() => fileInputRef.current?.click()}
         >
-          <div className="p-5 rounded-full bg-slate-800 text-amber-400 mb-4 shadow-inner group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all">
+          <div className="p-5 rounded-full bg-theme-input text-amber-500 mb-4 shadow-inner group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all">
             <Video size={48} strokeWidth={1.5} />
           </div>
-          <h3 className="text-xl font-semibold text-slate-200 mb-2">Select Video File for Live Processing</h3>
-          <p className="text-slate-500 mb-4">Drag & drop or click to browse</p>
-          <span className="text-xs text-slate-400 px-3 py-1 bg-slate-900 rounded-lg border border-slate-800">MP4, AVI, MOV, MKV (max 500MB)</span>
+          <h3 className="text-xl font-semibold text-theme-text mb-2">Select Video File for Live Processing</h3>
+          <p className="text-theme-text opacity-60 mb-4">Drag & drop or click to browse</p>
+          <span className="text-xs text-theme-text opacity-50 px-3 py-1 bg-theme-input rounded-lg border border-theme-border">MP4, AVI, MOV, MKV (max 500MB)</span>
           
           <input
             ref={fileInputRef}
@@ -273,12 +274,12 @@ const LiveAnalysisPage = () => {
             className="glass-panel p-4 flex flex-col md:flex-row items-center justify-between gap-4"
           >
             <div className="flex items-center gap-4">
-              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+              <div className="p-2 bg-amber-500/20 text-amber-500 rounded-lg">
                 <PlaySquare size={24} />
               </div>
               <div>
-                <h3 className="text-slate-200 font-semibold text-sm truncate max-w-[200px] md:max-w-md">{videoFile.name}</h3>
-                <p className="text-slate-400 text-xs text-left">{(videoFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <h3 className="text-theme-text font-semibold text-sm truncate max-w-[200px] md:max-w-md">{videoFile.name}</h3>
+                <p className="text-theme-text opacity-70 text-xs text-left">{(videoFile.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
             
@@ -295,13 +296,13 @@ const LiveAnalysisPage = () => {
 
               {(analysisStatus === 'buffering' || analysisStatus === 'streaming' || analysisStatus === 'complete') && (
                 <div className="flex-1 w-full md:w-64 flex flex-col justify-center">
-                  <div className="flex justify-between text-xs text-slate-300 mb-1">
+                  <div className="flex justify-between text-xs text-theme-text opacity-80 mb-1">
                     <span>{statusMessage}</span>
                     {analysisStatus === 'streaming' && videoInfo && (
-                      <span className="text-amber-400">{((drawnFrameCount / (videoInfo.total_frames || 1)) * 100).toFixed(0)}%</span>
+                      <span className="text-amber-500">{((drawnFrameCount / (videoInfo.total_frames || 1)) * 100).toFixed(0)}%</span>
                     )}
                   </div>
-                  <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                  <div className="h-2 w-full bg-theme-input rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-amber-500 transition-all duration-300"
                       style={{ width: analysisStatus === 'buffering' ? '100%' : `${(drawnFrameCount / (videoInfo?.total_frames || 1)) * 100}%` }}
@@ -311,7 +312,7 @@ const LiveAnalysisPage = () => {
               )}
 
               <button 
-                className="px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white transition-colors text-sm whitespace-nowrap"
+                className="px-4 py-2 rounded-xl border border-theme-border text-theme-text opacity-80 hover:bg-theme-card hover:opacity-100 transition-colors text-sm whitespace-nowrap"
                 onClick={() => {
                   setVideoFile(null);
                   setAnalysisStatus('idle');
@@ -331,11 +332,11 @@ const LiveAnalysisPage = () => {
           {(analysisStatus === 'buffering' || analysisStatus === 'ready' || analysisStatus === 'streaming' || analysisStatus === 'complete') && (
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-              className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
             >
               <div className="flex flex-col gap-6">
                 {/* Video Player Box */}
-                <div className="glass-panel overflow-hidden border border-slate-700/50 shadow-2xl relative p-1 rounded-2xl group">
+                <div className="glass-panel overflow-hidden relative p-1 rounded-2xl group">
                   <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-amber-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <VideoPlayer
                     videoFile={videoFile}
@@ -346,13 +347,13 @@ const LiveAnalysisPage = () => {
                     onPlay={() => setIsVideoPlaying(true)}
                     onPause={() => setIsVideoPlaying(false)}
                   />
-                  <div className="absolute top-4 right-4 bg-slate-900/80 backdrop-blur text-white text-xs px-2 py-1 rounded shadow pointer-events-none">
+                  <div className="absolute top-4 right-4 bg-theme-card backdrop-blur text-theme-text text-xs px-2 py-1 rounded shadow pointer-events-none">
                     Frame: {currentFrame}
                   </div>
                 </div>
 
                 {/* Explainability Panel */}
-                <div className="glass-panel p-5 rounded-2xl shadow-xl border border-slate-700/50 min-h-[200px]">
+                <div className="glass-panel p-5 rounded-2xl min-h-[200px]">
                   <ExplainabilityPanel 
                     explanation={finalResults?.explanation}
                     isAnalyzing={analysisStatus === 'streaming'}
@@ -362,9 +363,9 @@ const LiveAnalysisPage = () => {
 
               <div className="flex flex-col gap-6">
                 {/* Live Graph Box */}
-                <div className="glass-panel p-5 rounded-2xl shadow-xl border border-slate-700/50 flex-1 min-h-[350px] flex flex-col">
+                <div className="glass-panel p-5 rounded-2xl flex-1 min-h-[350px] flex flex-col">
                   <div className="flex items-center gap-3 mb-4">
-                    <h3 className="text-slate-200 font-semibold flex items-center gap-2">
+                    <h3 className="text-theme-text font-semibold flex items-center gap-2">
                       <Activity className="text-amber-500" size={18} />
                       Live Anomaly Score Monitor
                     </h3>
@@ -379,7 +380,7 @@ const LiveAnalysisPage = () => {
                     <LiveAnomalyGraph
                       ref={graphRef}
                       isLiveMode={analysisStatus === 'streaming'}
-                      staticData={analysisStatus === 'complete' ? frameScores : []}
+                      staticData={analysisStatus === 'complete' ? frameScores : null}
                       currentFrame={currentFrame}
                       totalFrames={videoInfo?.total_frames}
                       threshold={0.5}
@@ -389,7 +390,7 @@ const LiveAnalysisPage = () => {
                 </div>
 
                 {/* Timeline Box */}
-                <div className="glass-panel p-5 rounded-2xl shadow-xl border border-slate-700/50">
+                <div className="glass-panel p-5 rounded-2xl">
                   <IntelligentTimeline 
                     segments={finalResults?.anomaly_segments || videoInfo?.anomaly_segments || []} 
                     currentTime={currentTime}
@@ -402,20 +403,20 @@ const LiveAnalysisPage = () => {
                 {/* Small Stats Row */}
                 {videoInfo && (
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div className="glass-panel p-3 rounded-xl border border-slate-700/50">
-                      <p className="text-slate-500 text-xs mb-1">Total Frames</p>
-                      <p className="text-slate-200 font-semibold">{videoInfo.total_frames}</p>
+                    <div className="glass-panel p-3 rounded-xl">
+                      <p className="text-theme-text opacity-60 text-xs mb-1">Total Frames</p>
+                      <p className="text-theme-text font-semibold">{videoInfo.total_frames}</p>
                     </div>
-                    <div className="glass-panel p-3 rounded-xl border border-slate-700/50">
-                      <p className="text-slate-500 text-xs mb-1">Duration</p>
-                      <p className="text-slate-200 font-semibold">{videoInfo.duration_seconds?.toFixed(1)}s</p>
+                    <div className="glass-panel p-3 rounded-xl">
+                      <p className="text-theme-text opacity-60 text-xs mb-1">Duration</p>
+                      <p className="text-theme-text font-semibold">{videoInfo.duration_seconds?.toFixed(1)}s</p>
                     </div>
-                    <div className="glass-panel p-3 rounded-xl border border-slate-700/50">
-                      <p className="text-slate-500 text-xs mb-1">Processed</p>
-                      <p className="text-amber-400 font-semibold">{frameScores.length}</p>
+                    <div className="glass-panel p-3 rounded-xl">
+                      <p className="text-theme-text opacity-60 text-xs mb-1">Processed</p>
+                      <p className="text-amber-500 font-semibold">{frameScores.length}</p>
                     </div>
                     {finalResults && (
-                      <div className={`glass-panel p-3 rounded-xl border border-slate-700/50 ${finalResults.anomaly_detected ? 'bg-red-500/10 border-red-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+                      <div className={`glass-panel p-3 rounded-xl ${finalResults.anomaly_detected ? 'bg-red-500/10 border-red-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
                         <p className={`text-xs mb-1 ${finalResults.anomaly_detected ? 'text-red-400' : 'text-emerald-400'}`}>Status</p>
                         <p className={`font-semibold flex items-center gap-1 ${finalResults.anomaly_detected ? 'text-red-500' : 'text-emerald-500'}`}>
                           {finalResults.anomaly_detected ? <ShieldAlert size={14}/> : <Target size={14}/>}

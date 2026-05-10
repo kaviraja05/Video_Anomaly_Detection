@@ -50,11 +50,33 @@ async def upload_video_api(video: UploadFile = File(...)):
     if not video.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="Invalid video format")
     
-    # Run the full pipeline synchronously for this endpoint wrapper
-    features_numpy = FeatureExtractor.get_features()
-    features_numpy = FeatureExtractor.normalize_features(features_numpy)
-    features_numpy = FeatureExtractor.segment_features(features_numpy, num_segments=32)
-    features_tensor = torch.tensor(features_numpy, dtype=torch.float32).unsqueeze(0)
+    import tempfile
+    import os
+    
+    # Save the uploaded video to a temporary file for processing
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+        temp_video.write(await video.read())
+        temp_path = temp_video.name
+        
+    try:
+        # Run the full pipeline synchronously using the actual video
+        features_numpy = FeatureExtractor.get_features(video_path=temp_path)
+        features_numpy = FeatureExtractor.normalize_features(features_numpy)
+        features_numpy = FeatureExtractor.segment_features(features_numpy, num_segments=32)
+        features_tensor = torch.tensor(features_numpy, dtype=torch.float32).unsqueeze(0)
+        
+        # Get actual video metadata for precise score synchronization
+        import cv2
+        cap = cv2.VideoCapture(temp_path)
+        real_fps = cap.get(cv2.CAP_PROP_FPS)
+        real_total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        cap.release()
+        if not real_fps or real_fps <= 0: real_fps = 30.0
+        if real_total_frames <= 0: real_total_frames = 100
+        
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
     
     try:
          refined_features = gnn_enhancer.refine_features(features_tensor)
@@ -62,10 +84,19 @@ async def upload_video_api(video: UploadFile = File(...)):
          refined_features = features_tensor
          
     prediction = model_loader.predict(refined_features)
-    scores = prediction['scores'][0]
+    raw_scores = prediction['scores'][0]
     attention_weights = prediction.get('attention_weights')
     
-    fps = 30.0
+    # Interpolate the 32 segment scores across the actual total frames of the video
+    raw_scores_np = raw_scores.cpu().numpy() if hasattr(raw_scores, 'cpu') else raw_scores
+    expanded_scores = np.interp(
+        np.linspace(0, len(raw_scores_np) - 1, real_total_frames),
+        np.arange(len(raw_scores_np)),
+        raw_scores_np
+    )
+    scores = expanded_scores
+    
+    fps = float(real_fps)
     anomaly_segments = VideoProcessor.extract_anomaly_segments(scores, threshold=0.5, fps=fps)
     explanation = ExplainabilityModule.generate_explanation(
         scores=scores, 
@@ -84,6 +115,7 @@ async def upload_video_api(video: UploadFile = File(...)):
         'anomaly_detected': len(anomaly_segments) > 0,
         'overall_score': float(np.mean(scores)),
         'anomaly_segments': anomaly_segments,
+        'frame_scores': scores.tolist(),
         'explanation': explanation,
         'processing_time_ms': 150.0  # mock time
     }
@@ -142,17 +174,36 @@ async def upload_video_stream(request: Request, video: UploadFile = File(...)):
             yield f"event: status\ndata: {json.dumps({'message': 'Extracting features...', 'stage': 'features'})}\n\n"
             await asyncio.sleep(0.1)
             
-            # Step 1: Feature Extraction
-            features_numpy = FeatureExtractor.get_features()
-            features_numpy = FeatureExtractor.normalize_features(features_numpy)
-            features_numpy = FeatureExtractor.segment_features(features_numpy, num_segments=32)
+            import tempfile
+            import os
             
-            # Convert to tensor
-            features_tensor = torch.tensor(features_numpy, dtype=torch.float32).unsqueeze(0)
+            # Step 1: Feature Extraction using actual video
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+                temp_video.write(await video.read())
+                temp_path = temp_video.name
+                
+            try:
+                features_numpy = await asyncio.to_thread(FeatureExtractor.get_features, video_path=temp_path)
+                features_numpy = FeatureExtractor.normalize_features(features_numpy)
+                features_numpy = FeatureExtractor.segment_features(features_numpy, num_segments=32)
+                
+                # Convert to tensor
+                features_tensor = torch.tensor(features_numpy, dtype=torch.float32).unsqueeze(0)
+                
+                # Get actual video metadata
+                import cv2
+                cap = cv2.VideoCapture(temp_path)
+                real_fps = cap.get(cv2.CAP_PROP_FPS)
+                real_total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.release()
+                if not real_fps or real_fps <= 0: real_fps = 30.0
+                if real_total_frames <= 0: real_total_frames = 100
+                
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
             
             # Step 2: GNN Refinement
-            # Apply GNN dynamically (optional step to capture relationships between clips before passing to main model or after)
-            # In our case, the ProposedModel incorporates a GNN. We will utilize the standalone GNN module to show modularity.
             try:
                  refined_features = gnn_enhancer.refine_features(features_tensor)
             except Exception as e:
@@ -161,10 +212,19 @@ async def upload_video_stream(request: Request, video: UploadFile = File(...)):
             
             # Step 3: Inference Pipeline
             prediction = model_loader.predict(refined_features)
-            scores = prediction['scores'][0]
+            raw_scores = prediction['scores'][0]
             attention_weights = prediction.get('attention_weights')
             
-            fps = 30.0
+            # Interpolate the 32 segment scores across the actual total frames of the video
+            raw_scores_np = raw_scores.cpu().numpy() if hasattr(raw_scores, 'cpu') else raw_scores
+            expanded_scores = np.interp(
+                np.linspace(0, len(raw_scores_np) - 1, real_total_frames),
+                np.arange(len(raw_scores_np)),
+                raw_scores_np
+            )
+            scores = expanded_scores
+            
+            fps = float(real_fps)
             total_frames = len(scores)
             duration = total_frames / fps
             
@@ -207,6 +267,7 @@ async def upload_video_stream(request: Request, video: UploadFile = File(...)):
                 'anomaly_detected': len(anomaly_segments) > 0,
                 'overall_score': float(np.mean(scores)),
                 'anomaly_segments': anomaly_segments,
+                'frame_scores': scores.tolist(),
                 'explanation': explanation,
                 'processing_time_ms': processing_time
             }

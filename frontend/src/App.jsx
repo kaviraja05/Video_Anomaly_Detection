@@ -4,6 +4,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
+import { useTheme } from './context/ThemeContext';
 import Sidebar from './components/Sidebar';
 import Home from './pages/Home';
 import UploadPage from './pages/UploadPage';
@@ -14,6 +16,7 @@ import Register from './pages/Register';
 import History from './pages/History';
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [analysisResults, setAnalysisResults] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
@@ -81,7 +84,7 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-slate-950 text-slate-200 overflow-hidden font-sans bg-gradient-dark">
+    <div className="flex h-screen w-full bg-theme-bg text-theme-text overflow-hidden font-sans transition-colors duration-300" style={{ backgroundImage: 'var(--app-bg-gradient)' }}>
       {/* Sidebar Navigation */}
       <Sidebar 
         currentPage={currentPage} 
@@ -94,12 +97,21 @@ function App() {
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
-        <div className="flex-1 overflow-y-auto p-6 md:p-8 w-full max-w-[1600px] mx-auto custom-scrollbar">
+        {/* Theme Toggle Button */}
+        <button 
+          onClick={toggleTheme}
+          className="absolute top-6 right-6 z-50 p-2.5 rounded-full bg-theme-card/90 backdrop-blur-md border border-theme-border text-theme-text hover:bg-theme-card transition-all duration-300 flex items-center justify-center shadow-[0_4px_15px_rgba(0,0,0,0.1)] hover:scale-110 hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)]"
+          title="Toggle Theme"
+        >
+          {theme === 'dark' ? <Sun size={22} className="text-amber-400" /> : <Moon size={22} className="text-indigo-600" />}
+        </button>
+
+        <div className="flex-1 overflow-y-auto p-6 md:p-8 w-full max-w-[1600px] mx-auto custom-scrollbar pt-20 md:pt-8">
           {renderPage()}
         </div>
         
         {/* Footer */}
-        <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-slate-800/50 backdrop-blur-sm z-10 shrink-0">
+        <footer className="w-full py-4 text-center text-xs text-slate-500 border-t border-theme-border backdrop-blur-sm z-10 shrink-0">
           <p>Video Anomaly Detection System © 2026 | Powered by DSM + GNN + RA²R</p>
         </footer>
       </div>

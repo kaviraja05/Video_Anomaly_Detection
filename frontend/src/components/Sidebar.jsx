@@ -10,11 +10,15 @@ import {
   ShieldAlert,
   Cpu,
   LogOut,
-  Camera
+  Camera,
+  Sun,
+  Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName, userEmail }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', description: 'System Overview' },
@@ -38,7 +42,7 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
       animate={isCollapsed ? "collapsed" : "expanded"}
       variants={sidebarVariants}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="h-full bg-slate-900/80 backdrop-blur-xl border-r border-slate-800 flex flex-col pt-6 pb-4 relative z-20 shrink-0 shadow-2xl"
+      className="h-full bg-theme-bg backdrop-blur-xl border-r border-theme-border flex flex-col pt-6 pb-4 relative z-20 shrink-0 shadow-2xl transition-colors duration-300"
     >
       {/* Header / Brand */}
       <div className="flex items-center justify-between px-6 mb-10">
@@ -54,19 +58,21 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
                 <Camera size={24} />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-100 tracking-tight text-glow">VAD System</h1>
-                <p className="text-xs text-slate-400">AI Surveillance</p>
+                <h1 className="text-lg font-bold text-theme-text tracking-tight text-glow">VAD System</h1>
+                <p className="text-xs text-theme-text opacity-50">AI Surveillance</p>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
         
-        <button 
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all duration-300 ${isCollapsed ? 'mx-auto' : ''} flex items-center justify-center group`}
-        >
-          <Menu size={22} className="group-hover:scale-110 transition-transform duration-300" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`p-2 rounded-lg hover:bg-theme-card text-theme-text opacity-70 hover:opacity-100 transition-all duration-300 flex items-center justify-center group`}
+          >
+            <Menu size={22} className="group-hover:scale-110 transition-transform duration-300" />
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -81,8 +87,8 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
               onClick={() => onNavigate(item.id)}
               className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 group relative
                 ${isActive 
-                  ? 'bg-blue-600/10 text-blue-400' 
-                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
+                  ? 'bg-blue-600/10 text-theme-accent' 
+                  : 'text-theme-text opacity-70 hover:bg-theme-card hover:opacity-100'}`}
               title={isCollapsed ? item.label : ''}
             >
               {<Icon size={22} className={`min-w-[22px] transition-transform duration-300 ${isActive ? 'scale-110 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'group-hover:scale-110'}`} />}
@@ -95,7 +101,7 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
                     exit={{ opacity: 0, width: 0 }}
                     className="ml-4 text-left overflow-hidden whitespace-nowrap flex-1"
                   >
-                    <div className={`font-medium text-sm ${isActive ? 'text-blue-400' : 'text-slate-200'}`}>
+                    <div className={`font-medium text-sm ${isActive ? 'text-theme-accent' : 'text-theme-text'}`}>
                       {item.label}
                     </div>
                     {/* <div className="text-[10px] text-slate-500 mt-0.5">{item.description}</div> */}
@@ -106,7 +112,7 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
               {isActive && (
                 <motion.div 
                   layoutId="activeIndicator"
-                  className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                  className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-theme-accent rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"
                 />
               )}
             </button>
@@ -117,14 +123,14 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
       {isAuthenticated && (
         <div className="px-4 mt-2 mb-2">
           {!isCollapsed && (
-            <div className="mb-4 p-3 bg-slate-800/40 rounded-xl border border-slate-700/50">
-              <div className="text-sm font-medium text-slate-200 truncate">{userName || 'User'}</div>
-              <div className="text-xs text-slate-500 truncate">{userEmail || 'user@example.com'}</div>
+            <div className="mb-4 p-3 bg-theme-card rounded-xl border border-theme-border">
+              <div className="text-sm font-medium text-theme-text truncate">{userName || 'User'}</div>
+              <div className="text-xs text-theme-text opacity-50 truncate">{userEmail || 'user@example.com'}</div>
             </div>
           )}
           <button
             onClick={onLogout}
-            className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 text-red-400 hover:bg-slate-800/50 hover:text-red-300 group`}
+            className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 text-red-500 hover:bg-theme-card hover:text-red-400 group`}
             title={isCollapsed ? 'Logout' : ''}
           >
             <LogOut size={22} className="min-w-[22px] transition-transform duration-300 group-hover:scale-110" />
@@ -134,37 +140,37 @@ const Sidebar = ({ currentPage, onNavigate, isAuthenticated, onLogout, userName,
       )}
 
       {/* Footer Details */}
-      <div className="px-4 mt-auto pt-6 border-t border-slate-800/50">
+      <div className="px-4 mt-auto pt-6 border-t border-theme-border">
         <AnimatePresence>
           {!isCollapsed ? (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="bg-slate-950/50 rounded-xl p-4 border border-slate-800/50"
+              className="bg-theme-input rounded-xl p-4 border border-theme-border"
             >
-              <div className="flex items-center gap-3 mb-3 text-sm text-slate-300">
-                <Cpu size={16} className="text-emerald-400" />
+              <div className="flex items-center gap-3 mb-3 text-sm text-theme-text opacity-80">
+                <Cpu size={16} className="text-emerald-500" />
                 <span className="font-medium">System Status</span>
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Model</span>
-                  <span className="text-emerald-400 font-medium flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="text-theme-text opacity-50">Model</span>
+                  <span className="text-emerald-500 font-medium flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
                     Online
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Accuracy</span>
-                  <span className="text-slate-300 font-medium">96.8%</span>
+                  <span className="text-theme-text opacity-50">Accuracy</span>
+                  <span className="text-theme-text opacity-80 font-medium">96.8%</span>
                 </div>
               </div>
             </motion.div>
           ) : (
-            <div className="flex justify-center text-emerald-400 relative group cursor-pointer">
+            <div className="flex justify-center text-emerald-500 relative group cursor-pointer">
               <Cpu size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-400 animate-pulse border border-slate-900"></span>
+              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-500 animate-pulse border border-theme-bg"></span>
             </div>
           )}
         </AnimatePresence>

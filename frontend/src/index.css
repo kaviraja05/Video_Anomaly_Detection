@@ -3,15 +3,59 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-color: #020617; /* slate-950 */
+    --text-color: #e2e8f0; /* slate-200 */
+    --card-bg: rgba(30, 41, 59, 0.4); /* slate-800/40 */
+    --card-border: rgba(51, 65, 85, 0.5); /* slate-700/50 */
+    --input-bg: rgba(2, 6, 23, 0.5); /* slate-950/50 */
+    --accent-color: #3b82f6; /* blue-500 */
+    --app-bg-gradient: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+  }
+
+  [data-theme='light'] {
+    --bg-color: #f0f9ff; /* sky-50 fallback */
+    --text-color: #0f172a; /* slate-900 for high contrast */
+    --card-bg: rgba(255, 255, 255, 0.75); /* glassy white */
+    --card-border: rgba(255, 255, 255, 1); /* solid white borders for crisp look */
+    --input-bg: rgba(255, 255, 255, 0.9);
+    --accent-color: #0284c7; /* sky-600 */
+    --app-bg-gradient: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #bae6fd 100%); /* sleek blue gradient */
+  }
+
+  /* Increase base font weight for light theme to improve legibility */
+  [data-theme='light'] body {
+    font-weight: 500;
+  }
+  
+  [data-theme='light'] h1,
+  [data-theme='light'] h2,
+  [data-theme='light'] h3,
+  [data-theme='light'] h4 {
+    font-weight: 800;
+    color: #020617;
+  }
+
+  /* Adjust opacity utility classes specifically for light mode to maintain contrast */
+  [data-theme='light'] .opacity-50 { opacity: 0.7 !important; }
+  [data-theme='light'] .opacity-60 { opacity: 0.8 !important; }
+  [data-theme='light'] .opacity-70 { opacity: 0.9 !important; }
+  [data-theme='light'] .opacity-80 { opacity: 0.95 !important; }
+
   body {
-    @apply bg-slate-950 text-slate-200 antialiased selection:bg-blue-500/30;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
 }
 
 @layer utilities {
   .glass-panel {
-    @apply bg-slate-800/40 backdrop-blur-md border border-slate-700/50 shadow-xl rounded-2xl;
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    @apply backdrop-blur-md border shadow-xl rounded-2xl;
   }
   
   .text-gradient {
@@ -30,15 +74,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-900/50;
+  background-color: var(--bg-color);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-700 rounded-full border border-slate-900;
+  background-color: var(--card-border);
+  @apply rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-600;
+  @apply bg-blue-500/50;
 }
-
-/*# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJzb3VyY2VzIjpbImlucHV0LmNzcyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiQUFBQSIsImZpbGUiOiJpbmRleC5jc3MiLCJzb3VyY2VzQ29udGVudCI6WyJAdGFpbHdpbmQgYmFzZTtcclxuQHRhaWx3aW5kIGNvbXBvbmVudHM7XHJcbkB0YWlsd2luZCB1dGlsaXRpZXM7XHJcblxyXG5AbGF5ZXIgYmFzZSB7XHJcbiAgYm9keSB7XHJcbiAgICBAYXBwbHkgYmctc2xhdGUtOTUwIHRleHQtc2xhdGUtMjAwIGFudGlhbGlhc2VkIHNlbGVjdGlvbjpiZy1ibHVlLTUwMC8zMDtcclxuICAgIGZvbnQtZmFtaWx5OiAnSW50ZXInLCAtYXBwbGUtc3lzdGVtLCBCbGlua01hY1N5c3RlbUZvbnQsICdTZWdvZSBVSScsIFJvYm90bywgSGVsdmV0aWNhLCBBcmlhbCwgc2Fucy1zZXJpZjtcclxuICB9XHJcbn1cclxuXHJcbkBsYXllciB1dGlsaXRpZXMge1xyXG4gIC5nbGFzcy1wYW5lbCB7XHJcbiAgICBAYXBwbHkgYmctc2xhdGUtODAwLzQwIGJhY2tkcm9wLWJsdXItbWQgYm9yZGVyIGJvcmRlci1zbGF0ZS03MDAvNTAgc2hhZG93LXhsIHJvdW5kZWQtMnhsO1xyXG4gIH1cclxuICBcclxuICAudGV4dC1ncmFkaWVudCB7XHJcbiAgICBAYXBwbHkgYmctY2xpcC10ZXh0IHRleHQtdHJhbnNwYXJlbnQgYmctZ3JhZGllbnQtdG8tciBmcm9tLWJsdWUtNDAwIHRvLWluZGlnby01MDA7XHJcbiAgfVxyXG5cclxuICAudGV4dC1nbG93IHtcclxuICAgIHRleHQtc2hhZG93OiAwIDAgMTBweCByZ2JhKDU5LCAxMzAsIDI0NiwgMC41KTtcclxuICB9XHJcbn1cclxuXHJcbi8qIEN1c3RvbSBXZWJraXQgU2Nyb2xsYmFyICovXHJcbjo6LXdlYmtpdC1zY3JvbGxiYXIge1xyXG4gIHdpZHRoOiA4cHg7XHJcbiAgaGVpZ2h0OiA4cHg7XHJcbn1cclxuXHJcbjo6LXdlYmtpdC1zY3JvbGxiYXItdHJhY2sge1xyXG4gIEBhcHBseSBiZy1zbGF0ZS05MDAvNTA7XHJcbn1cclxuXHJcbjo6LXdlYmtpdC1zY3JvbGxiYXItdGh1bWIge1xyXG4gIEBhcHBseSBiZy1zbGF0ZS03MDAgcm91bmRlZC1mdWxsIGJvcmRlciBib3JkZXItc2xhdGUtOTAwO1xyXG59XHJcblxyXG46Oi13ZWJraXQtc2Nyb2xsYmFyLXRodW1iOmhvdmVyIHtcclxuICBAYXBwbHkgYmctc2xhdGUtNjAwO1xyXG59XHJcbiJdfQ== */

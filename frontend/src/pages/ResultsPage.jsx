@@ -13,11 +13,11 @@ const ResultsPage = ({ analysisData }) => {
           initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
           className="glass-panel p-12 text-center max-w-md w-full"
         >
-          <div className="mx-auto w-24 h-24 bg-slate-800/80 rounded-full flex items-center justify-center mb-6 border border-slate-700 shadow-inner">
-            <AlertTriangle size={48} className="text-slate-400" />
+          <div className="mx-auto w-24 h-24 bg-theme-input rounded-full flex items-center justify-center mb-6 border border-theme-border shadow-inner">
+            <AlertTriangle size={48} className="text-theme-text opacity-70" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-200 mb-2">No Analysis Data</h2>
-          <p className="text-slate-400">Please upload a video from the Dashboard or Upload page to see the results.</p>
+          <h2 className="text-2xl font-bold text-theme-text mb-2">No Analysis Data</h2>
+          <p className="text-theme-text opacity-70">Please upload a video from the Dashboard or Upload page to see the results.</p>
         </motion.div>
       </div>
     );
@@ -55,10 +55,10 @@ const ResultsPage = ({ analysisData }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-2xl">
-          <p className="text-slate-300 text-xs font-semibold mb-1">Frame {data.frame}</p>
+        <div className="bg-theme-card backdrop-blur-md border border-theme-border p-3 rounded-xl shadow-2xl">
+          <p className="text-theme-text text-xs font-semibold mb-1">Frame {data.frame}</p>
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 text-xs">Score:</span>
+            <span className="text-theme-text opacity-70 text-xs">Score:</span>
             <span className={`font-mono text-sm ${data.anomaly ? 'text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]' : 'text-emerald-400'}`}>
               {(data.score * 100).toFixed(1)}%
             </span>
@@ -90,21 +90,21 @@ const ResultsPage = ({ analysisData }) => {
       className="w-full max-w-7xl mx-auto space-y-8 relative z-10 pb-10"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-800 pb-6">
+      <motion.div variants={itemVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-theme-border pb-6">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-100 flex items-center gap-3 mb-2">
+          <h1 className="text-3xl font-extrabold text-theme-text flex items-center gap-3 mb-2">
             <BarChart3 className="text-blue-500" size={32} />
             Analysis Results
             {demo_mode && <span className="ml-2 text-xs font-semibold bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">Demo Mode</span>}
           </h1>
-          <p className="text-slate-400">Detailed offline post-processing analytics for the uploaded video.</p>
+          <p className="text-theme-text opacity-70">Detailed offline post-processing analytics for the uploaded video.</p>
         </div>
         <div className={`flex items-center gap-3 px-6 py-2.5 rounded-full border shadow-lg backdrop-blur-md ${
-          status?.toLowerCase() === 'anomaly' ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+          anomaly_detected ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
         }`}>
-          {status?.toLowerCase() === 'anomaly' ? <AlertTriangle size={24} className="animate-pulse shadow-red-500" /> : <CheckCircle size={24} />}
+          {anomaly_detected ? <AlertTriangle size={24} className="animate-pulse shadow-[0_0_10px_rgba(239,68,68,0.5)] rounded-full" /> : <CheckCircle size={24} />}
           <div className="flex flex-col">
-            <span className="font-bold text-lg leading-tight uppercase tracking-wide">{status?.toLowerCase() === 'anomaly' ? 'Anomaly' : 'Normal'}</span>
+            <span className="font-bold text-lg leading-tight uppercase tracking-wide">{anomaly_detected ? 'Anomaly' : 'Normal'}</span>
             {model_confidence !== undefined && (
               <span className="text-[10px] font-mono tracking-wider opacity-80 uppercase">
                 {(model_confidence * 100).toFixed(1)}% Confidence
@@ -127,8 +127,8 @@ const ResultsPage = ({ analysisData }) => {
               {stat.icon}
             </div>
             <div>
-              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-1">{stat.label}</p>
-              <p className="text-2xl font-bold text-slate-100">{stat.value}</p>
+              <p className="text-theme-text opacity-70 text-xs font-medium uppercase tracking-wider mb-1">{stat.label}</p>
+              <p className="text-2xl font-bold text-theme-text">{stat.value}</p>
             </div>
           </div>
         ))}
@@ -136,7 +136,7 @@ const ResultsPage = ({ analysisData }) => {
 
       {/* Anomaly Score Graph */}
       <motion.div variants={itemVariants} className="glass-panel p-6 rounded-3xl">
-        <h2 className="text-xl font-bold text-slate-200 mb-6 flex items-center gap-2">
+        <h2 className="text-xl font-bold text-theme-text mb-6 flex items-center gap-2">
           <Activity className="text-indigo-400" /> Full Temporal Score Timeline
         </h2>
         <div className="h-[350px] w-full">
@@ -165,32 +165,32 @@ const ResultsPage = ({ analysisData }) => {
         {/* Explanation Section */}
         {explanation && (
           <motion.div variants={itemVariants} className="lg:col-span-1 space-y-6">
-            <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
+            <h2 className="text-xl font-bold text-theme-text flex items-center gap-2">
               <span className="w-1.5 h-6 bg-blue-500 rounded-full"></span> AI Explanations
             </h2>
             <div className="glass-panel p-6 rounded-3xl space-y-6">
               <div>
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Analysis Summary</h3>
-                <p className="text-slate-200 text-sm leading-relaxed">{explanation.reason}</p>
+                <h3 className="text-sm font-semibold text-theme-text opacity-70 uppercase tracking-wider mb-2">Analysis Summary</h3>
+                <p className="text-theme-text text-sm leading-relaxed">{explanation.reason}</p>
               </div>
-              <div className="h-px bg-slate-800"></div>
+              <div className="h-px bg-theme-border"></div>
               <div>
-                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Temporal Context</h3>
-                <p className="text-slate-300 text-sm leading-relaxed">{explanation.temporal_context}</p>
+                <h3 className="text-sm font-semibold text-theme-text opacity-70 uppercase tracking-wider mb-2">Temporal Context</h3>
+                <p className="text-theme-text opacity-90 text-sm leading-relaxed">{explanation.temporal_context}</p>
               </div>
               {explanation.feature_importance && (
                 <>
-                  <div className="h-px bg-slate-800"></div>
+                  <div className="h-px bg-theme-border"></div>
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Feature Importance</h3>
+                    <h3 className="text-sm font-semibold text-theme-text opacity-70 uppercase tracking-wider mb-3">Feature Importance</h3>
                     <div className="space-y-3 mt-2">
                       {Object.entries(explanation.feature_importance).map(([key, value]) => (
                         <div key={key}>
                           <div className="flex justify-between text-xs font-medium mb-1">
-                            <span className="text-slate-300 capitalize">{key.replace(/_/g, ' ')}</span>
+                            <span className="text-theme-text opacity-90 capitalize">{key.replace(/_/g, ' ')}</span>
                             <span className="text-blue-400">{(value * 100).toFixed(1)}%</span>
                           </div>
-                          <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-theme-input rounded-full overflow-hidden">
                             <div className="h-full bg-blue-500 rounded-full" style={{ width: `${value * 100}%` }}></div>
                           </div>
                         </div>
@@ -206,7 +206,7 @@ const ResultsPage = ({ analysisData }) => {
         {/* Anomaly Frames */}
         {anomalyFrames.length > 0 && (
           <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2 mb-2">
+            <h2 className="text-xl font-bold text-theme-text flex items-center gap-2 mb-2">
               <span className="w-1.5 h-6 bg-red-500 rounded-full"></span> Top Anomaly Frames
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -215,7 +215,7 @@ const ResultsPage = ({ analysisData }) => {
                   key={frameData.frame}
                   onClick={() => setSelectedFrame(frameData.frame)}
                   className={`glass-panel p-4 rounded-2xl cursor-pointer hover:scale-105 transition-transform border group relative overflow-hidden flex flex-col items-center
-                    ${selectedFrame === frameData.frame ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-slate-700/50 hover:border-slate-500'}`}
+                    ${selectedFrame === frameData.frame ? 'border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-theme-border hover:border-theme-accent'}`}
                 >
                   <div className="absolute inset-0 bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   
@@ -223,15 +223,15 @@ const ResultsPage = ({ analysisData }) => {
                     <img 
                       src={analysisData.frame_images[frameData.frame]} 
                       alt={`Anomaly Frame ${frameData.frame}`} 
-                      className="w-full h-24 object-cover rounded-lg mb-3 border border-slate-700 shadow-md group-hover:border-red-500/50 transition-colors z-10"
+                      className="w-full h-24 object-cover rounded-lg mb-3 border border-theme-border shadow-md group-hover:border-red-500/50 transition-colors z-10"
                     />
                   ) : (
-                    <Film size={36} strokeWidth={1} className="text-slate-500 mb-3 group-hover:text-red-400 transition-colors z-10" />
+                    <Film size={36} strokeWidth={1} className="text-theme-text opacity-50 mb-3 group-hover:text-red-400 transition-colors z-10" />
                   )}
                   
-                  <span className="text-sm font-mono text-slate-300 z-10">Frame {frameData.frame}</span>
-                  <div className="mt-3 text-center z-10 w-full pt-3 border-t border-slate-700/50">
-                    <div className="text-xs text-slate-400 mb-1">Score</div>
+                  <span className="text-sm font-mono text-theme-text opacity-90 z-10">Frame {frameData.frame}</span>
+                  <div className="mt-3 text-center z-10 w-full pt-3 border-t border-theme-border">
+                    <div className="text-xs text-theme-text opacity-70 mb-1">Score</div>
                     <div className={`text-sm font-bold ${frameData.score > 0.8 ? 'text-red-500' : 'text-orange-400'}`}>
                       {(frameData.score * 100).toFixed(1)}%
                     </div>
@@ -246,13 +246,13 @@ const ResultsPage = ({ analysisData }) => {
       {/* Anomaly Segments Table */}
       {anomaly_segments.length > 0 && (
         <motion.div variants={itemVariants} className="space-y-4">
-          <h2 className="text-xl font-bold text-slate-200 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-theme-text flex items-center gap-2">
             <span className="w-1.5 h-6 bg-emerald-500 rounded-full"></span> Detected Segments Log
           </h2>
           <div className="glass-panel rounded-3xl overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-300">
-                <thead className="bg-slate-900/80 border-b border-slate-800 text-xs uppercase font-semibold text-slate-400 tracking-wider">
+              <table className="w-full text-left text-sm text-theme-text opacity-90">
+                <thead className="bg-theme-input border-b border-theme-border text-xs uppercase font-semibold text-theme-text opacity-70 tracking-wider">
                   <tr>
                     <th className="px-6 py-4 rounded-tl-3xl">Segment ID</th>
                     <th className="px-6 py-4">Start Frame</th>
@@ -262,9 +262,9 @@ const ResultsPage = ({ analysisData }) => {
                     <th className="px-6 py-4 rounded-tr-3xl">Severity</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50">
+                <tbody className="divide-y divide-theme-border">
                   {anomaly_segments.map((segment, idx) => (
-                    <tr key={idx} className="hover:bg-slate-800/30 transition-colors">
+                    <tr key={idx} className="hover:bg-theme-card transition-colors">
                       <td className="px-6 py-4 font-mono">#{idx + 1}</td>
                       <td className="px-6 py-4 font-mono">{segment.start_frame}</td>
                       <td className="px-6 py-4 font-mono">{segment.end_frame}</td>

@@ -1,17 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useImperativeHandle } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 import { Activity, AlertTriangle } from 'lucide-react';
 
-const LiveAnomalyGraph = ({ 
+const LiveAnomalyGraph = React.forwardRef(({ 
   isLiveMode = false,
   staticData = [], 
   currentFrame = 0,
   totalFrames = 0,
   threshold = 0.5,
   onFrameClick
-}) => {
+}, ref) => {
   const [graphData, setGraphData] = useState([]);
-  const chartRef = useRef(null);
 
   useEffect(() => {
     if (!isLiveMode && staticData && staticData.length > 0) {
@@ -26,44 +25,38 @@ const LiveAnomalyGraph = ({
     }
   }, [isLiveMode, staticData, threshold]);
 
-  const addDataPoint = (frameIndex, score) => {
-    setGraphData(prev => {
-      if (prev.some(d => d.frame === frameIndex)) return prev;
-      const newPoint = { frame: frameIndex, score, anomaly: score > threshold };
-      return [...prev, newPoint].sort((a, b) => a.frame - b.frame);
-    });
-  };
-
-  const addDataBatch = (startFrame, scores) => {
-    setGraphData(prev => {
-      const newPoints = scores.map((score, idx) => ({
-        frame: startFrame + idx,
-        score,
-        anomaly: score > threshold
-      }));
-      const existingFrames = new Set(prev.map(d => d.frame));
-      const uniqueNewPoints = newPoints.filter(p => !existingFrames.has(p.frame));
-      return [...prev, ...uniqueNewPoints].sort((a, b) => a.frame - b.frame);
-    });
-  };
-
-  useEffect(() => {
-    if (chartRef.current) {
-      chartRef.current.addDataPoint = addDataPoint;
-      chartRef.current.addDataBatch = addDataBatch;
-      chartRef.current.clearData = () => setGraphData([]);
-      chartRef.current.setData = (data) => setGraphData(data);
-    }
-  }, []);
+  useImperativeHandle(ref, () => ({
+    addDataPoint: (frameIndex, score) => {
+      setGraphData(prev => {
+        if (prev.some(d => d.frame === frameIndex)) return prev;
+        const newPoint = { frame: frameIndex, score, anomaly: score > threshold };
+        return [...prev, newPoint].sort((a, b) => a.frame - b.frame);
+      });
+    },
+    addDataBatch: (startFrame, scores) => {
+      setGraphData(prev => {
+        const newPoints = scores.map((score, idx) => ({
+          frame: startFrame + idx,
+          score,
+          anomaly: score > threshold
+        }));
+        const existingFrames = new Set(prev.map(d => d.frame));
+        const uniqueNewPoints = newPoints.filter(p => !existingFrames.has(p.frame));
+        return [...prev, ...uniqueNewPoints].sort((a, b) => a.frame - b.frame);
+      });
+    },
+    clearData: () => setGraphData([]),
+    setData: (data) => setGraphData(data)
+  }));
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700/50 p-3 rounded-xl shadow-2xl">
-          <p className="text-slate-300 text-xs font-semibold mb-1">Frame {data.frame}</p>
+        <div className="bg-theme-card backdrop-blur-md border border-theme-border p-3 rounded-xl shadow-2xl">
+          <p className="text-theme-text text-xs font-semibold mb-1">Frame {data.frame}</p>
           <div className="flex items-center gap-2">
-            <span className="text-slate-400 text-xs">Score:</span>
+            <span className="text-theme-text opacity-70 text-xs">Score:</span>
             <span className={`font-mono text-sm ${data.anomaly ? 'text-red-400 drop-shadow-[0_0_5px_rgba(248,113,113,0.5)]' : 'text-emerald-400'}`}>
               {(data.score * 100).toFixed(1)}%
             </span>
@@ -100,10 +93,10 @@ const LiveAnomalyGraph = ({
   };
 
   return (
-    <div className="flex flex-col h-full w-full" ref={chartRef}>
+    <div className="flex flex-col h-full w-full">
       <div className="flex-1 min-h-[250px] relative">
         {graphData.length === 0 ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-theme-text opacity-50">
             <Activity className="mb-2 opacity-50 animate-pulse" size={32} />
             <p className="text-sm">{isLiveMode ? 'Waiting for stream...' : 'No data available'}</p>
           </div>
@@ -121,6 +114,8 @@ const LiveAnomalyGraph = ({
               
               <XAxis 
                 dataKey="frame" 
+                type="number"
+                domain={[0, totalFrames || 'dataMax']}
                 stroke="rgba(148, 163, 184, 0.4)"
                 tick={{ fill: 'rgba(148, 163, 184, 0.6)', fontSize: 10 }}
                 tickMargin={8}
@@ -161,8 +156,8 @@ const LiveAnomalyGraph = ({
                 fill="url(#colorScore)"
                 dot={<CustomDot />}
                 activeDot={{ r: 5, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }}
-                animationDuration={isLiveMode ? 300 : 1000}
-                isAnimationActive={true}
+                animationDuration={1000}
+                isAnimationActive={!isLiveMode}
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -170,23 +165,6 @@ const LiveAnomalyGraph = ({
       </div>
     </div>
   );
-};
-
-export const LiveAnomalyGraphRef = React.forwardRef((props, ref) => {
-  const chartRef = useRef(null);
-
-  useEffect(() => {
-    if (ref) {
-      ref.current = {
-        addDataPoint: (frame, score) => chartRef.current?.addDataPoint(frame, score),
-        addDataBatch: (startFrame, scores) => chartRef.current?.addDataBatch(startFrame, scores),
-        clearData: () => chartRef.current?.clearData(),
-        setData: (data) => chartRef.current?.setData(data)
-      };
-    }
-  }, [ref]);
-
-  return <LiveAnomalyGraph {...props} ref={chartRef} />;
 });
 
-export default LiveAnomalyGraphRef;
+export default LiveAnomalyGraph;
