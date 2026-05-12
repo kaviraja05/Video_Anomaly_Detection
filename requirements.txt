@@ -41,3 +41,12 @@ pytest>=7.0.0
 # Code quality
 black>=22.0.0
 flake8>=5.0.0
+
+# API and Backend dependencies
+fastapi>=0.100.0
+uvicorn>=0.23.0
+motor>=3.3.0
+python-jose>=3.3.0
+passlib>=1.7.4
+python-multipart>=0.0.6
+pydantic[email]>=2.0.0

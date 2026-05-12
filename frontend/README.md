@@ -55,6 +55,23 @@ npm test
 - **Custom CSS** - Gradient animations, responsive grid
 
 ---
+### Dataset Information
+
+Due to large size constraints (~50GB), the dataset is not included in this repository.
+
+To run the project:
+1. Download the dataset from:
+   https://github.com/tianyu0207/RTFM
+
+2. Place the dataset in:
+   /data/ i3d_features
+
+3. Ensure the structure:
+   data/i3d_features
+     ├── train/
+     ├── test/
+
+The application will automatically load the dataset from this path.
 
 ## 📁 Project Structure
 
@@ -470,6 +487,7 @@ npm start
 6. Open Pull Request
 
 ---
+
 
 ## 📄 License
 
