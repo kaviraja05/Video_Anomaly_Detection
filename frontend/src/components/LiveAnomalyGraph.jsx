@@ -47,7 +47,7 @@ const LiveAnomalyGraph = React.forwardRef(({
     },
     clearData: () => setGraphData([]),
     setData: (data) => setGraphData(data)
-  }));
+  }), [threshold]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -94,7 +94,7 @@ const LiveAnomalyGraph = React.forwardRef(({
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex-1 min-h-[250px] relative">
+      <div className="flex-1 relative" style={{ minHeight: '300px' }}>
         {graphData.length === 0 ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-theme-text opacity-50">
             <Activity className="mb-2 opacity-50 animate-pulse" size={32} />
@@ -115,7 +115,7 @@ const LiveAnomalyGraph = React.forwardRef(({
               <XAxis 
                 dataKey="frame" 
                 type="number"
-                domain={[0, totalFrames || 'dataMax']}
+                domain={[0, totalFrames > 0 ? totalFrames : 'dataMax']}
                 stroke="rgba(148, 163, 184, 0.4)"
                 tick={{ fill: 'rgba(148, 163, 184, 0.6)', fontSize: 10 }}
                 tickMargin={8}
@@ -149,7 +149,7 @@ const LiveAnomalyGraph = React.forwardRef(({
               )}
               
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="score"
                 stroke="#f59e0b"
                 strokeWidth={2}

@@ -133,27 +133,48 @@ const LiveAnalysisPage = () => {
              setVideoInfo(JSON.parse(dataStr));
           }
 
-          if (eventType === 'frame_scores') {
+          if (eventType === 'frame_data' || eventType === 'frame_scores') {
              const data = JSON.parse(dataStr);
              const fps = videoInfo?.fps || 30.0;
              
-             // Directly update the graph to populate independent of video playback time
-             if (graphRef.current?.addDataBatch) {
-                graphRef.current.addDataBatch(data.start_frame, data.scores);
-             }
-             
-             // Update counters for the progress bar and stats
-             setDrawnFrameCount(prev => Math.max(prev, data.start_frame + data.scores.length));
-             setFrameScores(prev => [...prev, ...data.scores]);
-             
-             data.scores.forEach((score, idx) => {
-                const frame_index = data.start_frame + idx;
-                scoreBufferRef.current.push({
-                   frame_index,
-                   timestamp: frame_index / fps,
-                   score
+             if (eventType === 'frame_data') {
+                if (graphRef.current?.addDataPoint) {
+                    graphRef.current.addDataPoint(data.frame_index, data.score);
+                }
+                setDrawnFrameCount(prev => Math.max(prev, data.frame_index + 1));
+                setFrameScores(prev => {
+                   const newScores = [...prev];
+                   newScores[data.frame_index] = data.score;
+                   return newScores;
                 });
-             });
+                scoreBufferRef.current.push({
+                   frame_index: data.frame_index,
+                   timestamp: data.timestamp,
+                   score: data.score
+                });
+             } else {
+                if (graphRef.current?.addDataBatch) {
+                   graphRef.current.addDataBatch(data.start_frame, data.scores);
+                }
+                
+                setDrawnFrameCount(prev => Math.max(prev, data.start_frame + data.scores.length));
+                setFrameScores(prev => {
+                   const newScores = [...prev];
+                   data.scores.forEach((score, idx) => {
+                      newScores[data.start_frame + idx] = score;
+                   });
+                   return newScores;
+                });
+                
+                data.scores.forEach((score, idx) => {
+                   const frame_index = data.start_frame + idx;
+                   scoreBufferRef.current.push({
+                      frame_index,
+                      timestamp: frame_index / fps,
+                      score
+                   });
+                });
+             }
           }
 
           if (eventType === 'complete') {
@@ -167,7 +188,7 @@ const LiveAnalysisPage = () => {
                 graphRef.current.setData(allScores.map((score, idx) => ({
                   frame: idx,
                   score: score,
-                  anomaly: score > 0.5
+                  anomaly: score > 0.5 // Default fallback but it's parameterized in UI typically
                 })));
              }
 
